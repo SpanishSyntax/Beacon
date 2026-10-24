@@ -51,6 +51,13 @@ const DATA_DIR = () => path.join(app.getPath("userData"), "data");
  *  In dev LH_DEV_URL short-circuits everything: no spawn, no packaging —
  *  the window points at the running `next dev` server (full HMR). */
 function serverEntry() {
+	if (process.env.LH_SERVER_ENTRY && fs.existsSync(process.env.LH_SERVER_ENTRY)) {
+		return process.env.LH_SERVER_ENTRY;
+	}
+	const local = path.join(__dirname, "..", ".next", "standalone", "server.js");
+	if (fs.existsSync(local)) {
+		return local;
+	}
 	// extraResources ships the whole .next payload under server/standalone/
 	// (copied from .next with an explicit filter — see electron-builder.yml).
 	return path.join(process.resourcesPath, "server", "standalone", "server.js");
@@ -185,8 +192,9 @@ function log(line) {
 
 function startServer(port) {
 	return new Promise((resolve, reject) => {
+		const nodeBin = process.env.NODE_BIN || (process.platform === "win32" ? process.execPath : "node");
 		const child = spawn(
-			process.execPath,
+			nodeBin,
 			[serverEntry()],
 			{
 				cwd: path.dirname(serverEntry()),
@@ -570,6 +578,7 @@ async function main() {
 		log(`server up: ${url}`);
 	} else {
 		log(`dev mode: ${devUrl}`);
+		await waitUntilUp(devUrl);
 	}
 
 	installMenu();

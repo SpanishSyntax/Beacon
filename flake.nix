@@ -71,14 +71,28 @@
           export ELECTRON_OZONE_PLATFORM_HINT="auto"
           export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
 
-          if [ -f "package.json" ] && [ -f "electron/main.cjs" ]; then
-            exec ${electron}/bin/electron . "$@"
-          elif [ -n "$LEARNHARNESS_REPO" ] && [ -d "$LEARNHARNESS_REPO" ]; then
-            cd "$LEARNHARNESS_REPO"
+          CANDIDATES=(
+            "$LEARNHARNESS_REPO"
+            "$PWD"
+            "$HOME/Documents/learnharness"
+            "$HOME/Workspace/learnharness"
+            "$HOME/Projects/learnharness"
+          )
+
+          TARGET_DIR=""
+          for candidate in "''${CANDIDATES[@]}"; do
+            if [ -n "$candidate" ] && [ -f "$candidate/package.json" ] && [ -f "$candidate/electron/main.cjs" ]; then
+              TARGET_DIR="$candidate"
+              break
+            fi
+          done
+
+          if [ -n "$TARGET_DIR" ]; then
+            cd "$TARGET_DIR"
             exec ${electron}/bin/electron . "$@"
           else
-            echo "LearnHarness launched outside a checkout directory."
-            echo "Tip: run inside the learnharness directory or set LEARNHARNESS_REPO."
+            echo "Error: Could not locate LearnHarness repository directory."
+            echo "Tip: Run inside your checkout or set LEARNHARNESS_REPO=/path/to/learnharness."
             exit 1
           fi
           EOF
@@ -91,10 +105,29 @@
           export ELECTRON_OZONE_PLATFORM_HINT="auto"
           export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
 
-          if [ -n "$LEARNHARNESS_REPO" ] && [ -d "$LEARNHARNESS_REPO" ]; then
-            cd "$LEARNHARNESS_REPO"
+          CANDIDATES=(
+            "$LEARNHARNESS_REPO"
+            "$PWD"
+            "$HOME/Documents/learnharness"
+            "$HOME/Workspace/learnharness"
+            "$HOME/Projects/learnharness"
+          )
+
+          TARGET_DIR=""
+          for candidate in "''${CANDIDATES[@]}"; do
+            if [ -n "$candidate" ] && [ -f "$candidate/package.json" ] && [ -f "$candidate/electron/main.cjs" ]; then
+              TARGET_DIR="$candidate"
+              break
+            fi
+          done
+
+          if [ -n "$TARGET_DIR" ]; then
+            cd "$TARGET_DIR"
+            exec npm run desktop:dev "$@"
+          else
+            echo "Error: Could not locate LearnHarness repository directory."
+            exit 1
           fi
-          exec npm run desktop:dev "$@"
           EOF
           chmod +x $out/bin/learnharness-dev
 
