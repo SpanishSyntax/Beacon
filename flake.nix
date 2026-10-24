@@ -28,43 +28,94 @@
         git
       ];
 
-      learnharnessLauncher = pkgs.writeShellScriptBin "learnharness" ''
-        export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
-        export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
-        export ELECTRON_OZONE_PLATFORM_HINT="auto"
-        export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
+      desktopItem = pkgs.makeDesktopItem {
+        name = "learnharness";
+        desktopName = "LearnHarness";
+        comment = "An agent harness for learning: adaptive teaching, practice, and a persistent knowledge graph";
+        exec = "learnharness %U";
+        icon = "learnharness";
+        terminal = false;
+        categories = ["Education" "Development"];
+        startupWMClass = "LearnHarness";
+      };
 
-        if [ -f "package.json" ] && [ -f "electron/main.cjs" ]; then
-          exec ${electron}/bin/electron . "$@"
-        else
-          echo "Please run learnharness from its repository directory or use packaged mode."
-          exit 1
-        fi
-      '';
+      learnharnessPackage = pkgs.stdenv.mkDerivation {
+        pname = "learnharness";
+        version = "0.3.4";
+        src = lib.cleanSource ./.;
 
-      learnharnessDevLauncher = pkgs.writeShellScriptBin "learnharness-dev" ''
-        export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
-        export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
-        export ELECTRON_OZONE_PLATFORM_HINT="auto"
-        export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
+        nativeBuildInputs = [
+          pkgs.copyDesktopItems
+        ];
 
-        exec npm run desktop:dev "$@"
-      '';
+        desktopItems = [desktopItem];
+
+        installPhase = ''
+          runHook preInstall
+
+          mkdir -p $out/bin
+          mkdir -p $out/share/icons/hicolor/512x512/apps
+          mkdir -p $out/share/icons/hicolor/scalable/apps
+
+          if [ -f build/icon.png ]; then
+            cp build/icon.png $out/share/icons/hicolor/512x512/apps/learnharness.png
+          fi
+          if [ -f build/icon-flat.svg ]; then
+            cp build/icon-flat.svg $out/share/icons/hicolor/scalable/apps/learnharness.svg
+          fi
+
+          cat << 'EOF' > $out/bin/learnharness
+          #!/usr/bin/env bash
+          export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
+          export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
+          export ELECTRON_OZONE_PLATFORM_HINT="auto"
+          export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
+
+          if [ -f "package.json" ] && [ -f "electron/main.cjs" ]; then
+            exec ${electron}/bin/electron . "$@"
+          elif [ -n "$LEARNHARNESS_REPO" ] && [ -d "$LEARNHARNESS_REPO" ]; then
+            cd "$LEARNHARNESS_REPO"
+            exec ${electron}/bin/electron . "$@"
+          else
+            echo "LearnHarness launched outside a checkout directory."
+            echo "Tip: run inside the learnharness directory or set LEARNHARNESS_REPO."
+            exit 1
+          fi
+          EOF
+          chmod +x $out/bin/learnharness
+
+          cat << 'EOF' > $out/bin/learnharness-dev
+          #!/usr/bin/env bash
+          export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
+          export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
+          export ELECTRON_OZONE_PLATFORM_HINT="auto"
+          export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
+
+          if [ -n "$LEARNHARNESS_REPO" ] && [ -d "$LEARNHARNESS_REPO" ]; then
+            cd "$LEARNHARNESS_REPO"
+          fi
+          exec npm run desktop:dev "$@"
+          EOF
+          chmod +x $out/bin/learnharness-dev
+
+          runHook postInstall
+        '';
+      };
     in {
       packages = {
-        default = learnharnessLauncher;
-        learnharness = learnharnessLauncher;
-        dev = learnharnessDevLauncher;
+        default = learnharnessPackage;
+        learnharness = learnharnessPackage;
+        dev = learnharnessPackage;
       };
 
       apps = {
         default = {
           type = "app";
-          program = "${learnharnessLauncher}/bin/learnharness";
+          program = "${learnharnessPackage}/bin/learnharness";
         };
         dev = {
           type = "app";
-          program = "${learnharnessDevLauncher}/bin/learnharness-dev";
+          program = "${learnharnessPackage}/bin/learnharness-dev";
         };
       };
 
