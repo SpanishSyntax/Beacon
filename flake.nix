@@ -28,17 +28,6 @@
         git
       ];
 
-      desktopItem = pkgs.makeDesktopItem {
-        name = "learnharness";
-        desktopName = "LearnHarness";
-        comment = "An agent harness for learning: adaptive teaching, practice, and a persistent knowledge graph";
-        exec = "learnharness %U";
-        icon = "learnharness";
-        terminal = false;
-        categories = ["Education" "Development"];
-        startupWMClass = "LearnHarness";
-      };
-
       beaconDesktopItem = pkgs.makeDesktopItem {
         name = "beacon";
         desktopName = "Beacon";
@@ -59,9 +48,10 @@
 
         nativeBuildInputs = [
           pkgs.copyDesktopItems
+          pkgs.imagemagick
         ];
 
-        desktopItems = [desktopItem beaconDesktopItem];
+        desktopItems = [beaconDesktopItem];
 
         env = {
           NEXT_TELEMETRY_DISABLED = "1";
@@ -77,15 +67,19 @@
 
           mkdir -p $out/bin
           mkdir -p $out/lib/beacon
-          mkdir -p $out/share/icons/hicolor/512x512/apps
+          mkdir -p $out/share/pixmaps
           mkdir -p $out/share/icons/hicolor/scalable/apps
 
           if [ -f build/icon.png ]; then
-            cp build/icon.png $out/share/icons/hicolor/512x512/apps/learnharness.png
-            cp build/icon.png $out/share/icons/hicolor/512x512/apps/beacon.png
+            cp build/icon.png $out/share/pixmaps/beacon.png
+            for size in 16 24 32 48 64 128 256 512; do
+              mkdir -p $out/share/icons/hicolor/''${size}x''${size}/apps
+              magick build/icon.png -resize ''${size}x''${size} $out/share/icons/hicolor/''${size}x''${size}/apps/beacon.png
+            done
           fi
+
           if [ -f build/icon-flat.svg ]; then
-            cp build/icon-flat.svg $out/share/icons/hicolor/scalable/apps/learnharness.svg
+            cp build/icon-flat.svg $out/share/pixmaps/beacon.svg
             cp build/icon-flat.svg $out/share/icons/hicolor/scalable/apps/beacon.svg
           fi
 
