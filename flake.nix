@@ -50,10 +50,12 @@
         startupWMClass = "Beacon";
       };
 
-      beaconPackage = pkgs.stdenv.mkDerivation {
+      beaconPackage = pkgs.buildNpmPackage {
         pname = "beacon";
         version = "0.3.4";
         src = lib.cleanSource ./.;
+
+        npmDepsHash = "sha256-pziw5ud2QuqX3eMQKFNP5jG4xtNUl5jtiVeavlG1Cic=";
 
         nativeBuildInputs = [
           pkgs.copyDesktopItems
@@ -61,10 +63,20 @@
 
         desktopItems = [desktopItem beaconDesktopItem];
 
+        env = {
+          NEXT_TELEMETRY_DISABLED = "1";
+          ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
+        };
+
+        postBuild = ''
+          node scripts/build-server.mjs
+        '';
+
         installPhase = ''
           runHook preInstall
 
           mkdir -p $out/bin
+          mkdir -p $out/lib/beacon
           mkdir -p $out/share/icons/hicolor/512x512/apps
           mkdir -p $out/share/icons/hicolor/scalable/apps
 
@@ -77,43 +89,23 @@
             cp build/icon-flat.svg $out/share/icons/hicolor/scalable/apps/beacon.svg
           fi
 
-          cat << 'EOF' > $out/bin/beacon
+          # Copy standalone server payload
+          cp -r .next/standalone $out/lib/beacon/server
+
+          # Copy electron entrypoint
+          cp -r electron $out/lib/beacon/electron
+          cp package.json $out/lib/beacon/package.json
+
+          cat << EOF > $out/bin/beacon
           #!/usr/bin/env bash
           export NODE_BIN="${nodejs}/bin/node"
+          export LH_SERVER_ENTRY="$out/lib/beacon/server/server.js"
           export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
           export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
           export ELECTRON_OZONE_PLATFORM_HINT="auto"
-          export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
+          export PATH="${lib.makeBinPath runtimeDeps}:\$PATH"
 
-          CANDIDATES=(
-            "$BEACON_REPO"
-            "$LEARNHARNESS_REPO"
-            "$PWD"
-            "$HOME/Icebergs/Beacon"
-            "$HOME/Documents/beacon"
-            "$HOME/Workspace/beacon"
-            "$HOME/Projects/beacon"
-            "$HOME/Documents/learnharness"
-            "$HOME/Workspace/learnharness"
-            "$HOME/Projects/learnharness"
-          )
-
-          TARGET_DIR=""
-          for candidate in "''${CANDIDATES[@]}"; do
-            if [ -n "$candidate" ] && [ -f "$candidate/package.json" ] && [ -f "$candidate/electron/main.cjs" ]; then
-              TARGET_DIR="$candidate"
-              break
-            fi
-          done
-
-          if [ -n "$TARGET_DIR" ]; then
-            cd "$TARGET_DIR"
-            exec ${electron}/bin/electron . "$@"
-          else
-            echo "Error: Could not locate Beacon repository directory."
-            echo "Tip: Run inside your checkout or set BEACON_REPO=/path/to/Beacon."
-            exit 1
-          fi
+          exec ${electron}/bin/electron "$out/lib/beacon" "\$@"
           EOF
           chmod +x $out/bin/beacon
 
