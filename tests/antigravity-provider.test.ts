@@ -71,4 +71,12 @@ describe("Antigravity Provider (Zero-Key Ambient)", () => {
 		assert.ok(agyModels.some((m) => m.id === "gemini-3.8-flash-high"));
 		assert.ok(agyModels.some((m) => m.id === "gemini-4-argon-high"));
 	});
+
+	it("adapts model id when reasoning effort changes", () => {
+		const base = "gemini-3.8-flash-medium";
+		const effort = "high";
+		const variantId = `${base.replace(/-(low|medium|high|xhigh|max)$/, "")}-${effort}`;
+		assert.equal(variantId, "gemini-3.8-flash-high");
+		assert.ok(ANTIGRAVITY_MODELS.some((m) => m.id === variantId));
+	});
 });

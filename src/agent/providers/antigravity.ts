@@ -190,12 +190,22 @@ function streamAntigravity(
 	const startTime = Date.now();
 	const prompt = formatTranscript(context);
 
+	let modelId = requestModel.id;
+	if (streamOptions?.reasoning) {
+		const effort = streamOptions.reasoning === "minimal" ? "low" : streamOptions.reasoning;
+		const base = modelId.replace(/-(low|medium|high|xhigh|max)$/, "");
+		const variantId = `${base}-${effort}`;
+		if (ANTIGRAVITY_MODELS.some((m) => m.id === variantId)) {
+			modelId = variantId;
+		}
+	}
+
 	const args = [
 		"--output-format", "stream-json",
-		"--model", requestModel.id,
+		"--model", modelId,
 	];
 
-	if (streamOptions?.reasoning) {
+	if (!modelId.match(/-(low|medium|high|xhigh|max)$/) && streamOptions?.reasoning) {
 		const effort = streamOptions.reasoning === "minimal" ? "low" : streamOptions.reasoning;
 		args.push("--effort", effort);
 	}
@@ -278,8 +288,9 @@ function streamAntigravity(
 		}
 	});
 
-	child.stderr.on("data", () => {
-		// ignore
+	let stderrText = "";
+	child.stderr.on("data", (chunk: Buffer | string) => {
+		stderrText += chunk.toString();
 	});
 
 	child.on("error", (err) => {
@@ -310,7 +321,7 @@ function streamAntigravity(
 
 		if (code !== 0 && !textStarted) {
 			partialMessage.stopReason = "error";
-			partialMessage.errorMessage = `agy exited with code ${code}`;
+			partialMessage.errorMessage = stderrText.trim() || `agy exited with code ${code}`;
 			outer.push({ type: "error", reason: "error", error: partialMessage });
 			outer.end(partialMessage);
 			return;
