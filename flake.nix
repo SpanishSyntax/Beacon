@@ -1,5 +1,5 @@
 {
-  description = "LearnHarness - An agent harness for learning";
+  description = "Beacon - An agent harness for learning";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -39,8 +39,19 @@
         startupWMClass = "LearnHarness";
       };
 
-      learnharnessPackage = pkgs.stdenv.mkDerivation {
-        pname = "learnharness";
+      beaconDesktopItem = pkgs.makeDesktopItem {
+        name = "beacon";
+        desktopName = "Beacon";
+        comment = "An agent harness for learning: adaptive teaching, practice, and a persistent knowledge graph";
+        exec = "beacon %U";
+        icon = "beacon";
+        terminal = false;
+        categories = ["Education" "Development"];
+        startupWMClass = "Beacon";
+      };
+
+      beaconPackage = pkgs.stdenv.mkDerivation {
+        pname = "beacon";
         version = "0.3.4";
         src = lib.cleanSource ./.;
 
@@ -48,7 +59,7 @@
           pkgs.copyDesktopItems
         ];
 
-        desktopItems = [desktopItem];
+        desktopItems = [desktopItem beaconDesktopItem];
 
         installPhase = ''
           runHook preInstall
@@ -59,21 +70,29 @@
 
           if [ -f build/icon.png ]; then
             cp build/icon.png $out/share/icons/hicolor/512x512/apps/learnharness.png
+            cp build/icon.png $out/share/icons/hicolor/512x512/apps/beacon.png
           fi
           if [ -f build/icon-flat.svg ]; then
             cp build/icon-flat.svg $out/share/icons/hicolor/scalable/apps/learnharness.svg
+            cp build/icon-flat.svg $out/share/icons/hicolor/scalable/apps/beacon.svg
           fi
 
-          cat << 'EOF' > $out/bin/learnharness
+          cat << 'EOF' > $out/bin/beacon
           #!/usr/bin/env bash
+          export NODE_BIN="${nodejs}/bin/node"
           export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
           export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
           export ELECTRON_OZONE_PLATFORM_HINT="auto"
           export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
 
           CANDIDATES=(
+            "$BEACON_REPO"
             "$LEARNHARNESS_REPO"
             "$PWD"
+            "$HOME/Icebergs/Beacon"
+            "$HOME/Documents/beacon"
+            "$HOME/Workspace/beacon"
+            "$HOME/Projects/beacon"
             "$HOME/Documents/learnharness"
             "$HOME/Workspace/learnharness"
             "$HOME/Projects/learnharness"
@@ -91,23 +110,29 @@
             cd "$TARGET_DIR"
             exec ${electron}/bin/electron . "$@"
           else
-            echo "Error: Could not locate LearnHarness repository directory."
-            echo "Tip: Run inside your checkout or set LEARNHARNESS_REPO=/path/to/learnharness."
+            echo "Error: Could not locate Beacon repository directory."
+            echo "Tip: Run inside your checkout or set BEACON_REPO=/path/to/Beacon."
             exit 1
           fi
           EOF
-          chmod +x $out/bin/learnharness
+          chmod +x $out/bin/beacon
 
-          cat << 'EOF' > $out/bin/learnharness-dev
+          cat << 'EOF' > $out/bin/beacon-dev
           #!/usr/bin/env bash
+          export NODE_BIN="${nodejs}/bin/node"
           export ELECTRON_OVERRIDE_DIST_PATH="${electron}/bin"
           export ELECTRON_SKIP_BINARY_DOWNLOAD="1"
           export ELECTRON_OZONE_PLATFORM_HINT="auto"
           export PATH="${lib.makeBinPath runtimeDeps}:$PATH"
 
           CANDIDATES=(
+            "$BEACON_REPO"
             "$LEARNHARNESS_REPO"
             "$PWD"
+            "$HOME/Icebergs/Beacon"
+            "$HOME/Documents/beacon"
+            "$HOME/Workspace/beacon"
+            "$HOME/Projects/beacon"
             "$HOME/Documents/learnharness"
             "$HOME/Workspace/learnharness"
             "$HOME/Projects/learnharness"
@@ -125,30 +150,42 @@
             cd "$TARGET_DIR"
             exec npm run desktop:dev "$@"
           else
-            echo "Error: Could not locate LearnHarness repository directory."
+            echo "Error: Could not locate Beacon repository directory."
             exit 1
           fi
           EOF
-          chmod +x $out/bin/learnharness-dev
+          chmod +x $out/bin/beacon-dev
+
+          ln -s $out/bin/beacon $out/bin/learnharness
+          ln -s $out/bin/beacon-dev $out/bin/learnharness-dev
 
           runHook postInstall
         '';
       };
     in {
       packages = {
-        default = learnharnessPackage;
-        learnharness = learnharnessPackage;
-        dev = learnharnessPackage;
+        default = beaconPackage;
+        beacon = beaconPackage;
+        learnharness = beaconPackage;
+        dev = beaconPackage;
       };
 
       apps = {
         default = {
           type = "app";
-          program = "${learnharnessPackage}/bin/learnharness";
+          program = "${beaconPackage}/bin/beacon";
+        };
+        beacon = {
+          type = "app";
+          program = "${beaconPackage}/bin/beacon";
+        };
+        learnharness = {
+          type = "app";
+          program = "${beaconPackage}/bin/learnharness";
         };
         dev = {
           type = "app";
-          program = "${learnharnessPackage}/bin/learnharness-dev";
+          program = "${beaconPackage}/bin/beacon-dev";
         };
       };
 
@@ -176,22 +213,22 @@
     })
     // {
       homeManagerModules = {
-        default = self.homeManagerModules.learnharness;
-        learnharness = {
+        default = self.homeManagerModules.beacon;
+        beacon = {
           config,
           lib,
           pkgs,
           ...
         }: let
-          cfg = config.programs.learnharness;
+          cfg = config.programs.beacon;
           system = pkgs.stdenv.hostPlatform.system;
         in {
-          options.programs.learnharness = {
-            enable = lib.mkEnableOption "LearnHarness AI learning agent";
+          options.programs.beacon = {
+            enable = lib.mkEnableOption "Beacon AI learning agent";
             package = lib.mkOption {
               type = lib.types.package;
               default = self.packages.${system}.default;
-              description = "The LearnHarness launcher package.";
+              description = "The Beacon launcher package.";
             };
           };
 
@@ -199,6 +236,7 @@
             home.packages = [cfg.package];
           };
         };
+        learnharness = self.homeManagerModules.beacon;
       };
     };
 }
