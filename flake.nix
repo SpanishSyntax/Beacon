@@ -41,10 +41,10 @@
 
       beaconPackage = pkgs.buildNpmPackage {
         pname = "beacon";
-        version = "0.3.4";
+        version = "0.6.1";
         src = lib.cleanSource ./.;
 
-        npmDepsHash = "sha256-pziw5ud2QuqX3eMQKFNP5jG4xtNUl5jtiVeavlG1Cic=";
+        npmDepsHash = "sha256-bp7HWZaBNfuqtuguGxD4n1mtpTnMxRdqNvabxNMYRE8=";
 
         nativeBuildInputs = [
           pkgs.copyDesktopItems
@@ -56,6 +56,7 @@
         env = {
           NEXT_TELEMETRY_DISABLED = "1";
           ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
+          SKIP_CORE_PLUGINS_BUILD = "1";
         };
 
         postBuild = ''

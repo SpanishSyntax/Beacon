@@ -18,7 +18,7 @@ dist/
 /public/plugin-authoring/
 
 # Generated app-owned plugin packages and transactional staging.
-/core-plugins/
+# /core-plugins/ is tracked for hermetic packaging
 /.core-plugins-*/
 
 # dev auth/keys store (auth-keys wave): repo-root auth.json — secrets never committed
