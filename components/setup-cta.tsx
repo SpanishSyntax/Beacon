@@ -44,7 +44,11 @@ export function useZeroKeys(): boolean {
 	const read = useCallback(() => {
 		fetch("/api/keys")
 			.then((r) => r.json())
-			.then((body: { keys?: AuthKeyStatus[]; providers?: ProviderKeyInfo[] }) => {
+			.then((body: { keys?: AuthKeyStatus[]; providers?: ProviderKeyInfo[]; hasAmbientProvider?: boolean }) => {
+				if (body.hasAmbientProvider) {
+					setZeroKeys(false);
+					return;
+				}
 				setZeroKeys(!hasProviderKey(body.keys ?? [], body.providers));
 			})
 			.catch(() => {});

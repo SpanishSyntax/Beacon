@@ -44,8 +44,8 @@ const PRODUCT_NAME = "LearnHarness";
 // Must run before the LH_DEV_URL suffix below — dev becomes
 // "LearnHarness-dev".
 app.setName(PRODUCT_NAME);
-const AUTH_FILE = () => path.join(app.getPath("userData"), "auth.json");
-const DATA_DIR = () => path.join(app.getPath("userData"), "data");
+const AUTH_FILE = () => process.env.LH_AUTH_FILE || path.join(app.getPath("userData"), "auth.json");
+const DATA_DIR = () => process.env.LH_DATA_DIR || path.join(app.getPath("userData"), "data");
 
 /** The packaged standalone server (extraResources → Resources/server).
  *  In dev LH_DEV_URL short-circuits everything: no spawn, no packaging —

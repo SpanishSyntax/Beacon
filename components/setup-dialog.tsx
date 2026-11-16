@@ -268,6 +268,9 @@ export function SetupDialog({
 		setPicked({});
 		setLevels({});
 		setError(null);
+		setSaving(false);
+		setKeySaving(false);
+		setKeyError(null);
 		fetch("/api/keys")
 			.then((r) => r.json())
 			.then((b: { providers?: ProviderKeyInfo[] }) => setKeyProviders(b.providers ?? []))
@@ -350,20 +353,25 @@ export function SetupDialog({
 		if (!keyProvider || !keyValue.trim() || keySaving) return;
 		setKeySaving(true);
 		setKeyError(null);
-		const res = await fetch(`/api/keys/${encodeURIComponent(keyProvider.envVar)}`, {
-			method: "PUT",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ value: keyValue }),
-		}).catch(() => null);
-		setKeySaving(false);
-		if (!res || !res.ok) {
-			const body = (await res?.json().catch(() => ({}))) as { error?: string } | undefined;
-			setKeyError(res ? (body?.error ?? `Save failed (${res.status})`) : "Save failed. Check your connection and try again.");
-			return;
+		try {
+			const res = await fetch(`/api/keys/${encodeURIComponent(keyProvider.envVar)}`, {
+				method: "PUT",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ value: keyValue }),
+			});
+			if (!res.ok) {
+				const body = (await res.json().catch(() => ({}))) as { error?: string } | undefined;
+				setKeyError(body?.error ?? `Save failed (${res.status})`);
+				return;
+			}
+			setKeyProvider(null);
+			setKeyValue("");
+			notifySettingsSaved("keys");
+		} catch {
+			setKeyError("Save failed. Check your connection and try again.");
+		} finally {
+			setKeySaving(false);
 		}
-		setKeyProvider(null);
-		setKeyValue("");
-		notifySettingsSaved("keys");
 	}
 
 	async function save() {
@@ -378,18 +386,24 @@ export function SetupDialog({
 				...(level ? { thinkingLevel: level } : {}),
 			};
 		}
-		const res = await fetch("/api/settings/models", {
-			method: "PUT",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify(models),
-		}).catch(() => null);
-		if (!res || !res.ok) {
+		try {
+			const res = await fetch("/api/settings/models", {
+				method: "PUT",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(models),
+			});
+			if (!res.ok) {
+				const body = (await res.json().catch(() => ({}))) as { error?: string };
+				setError(`Save failed: ${body.error ?? res.status}`);
+				return;
+			}
+			notifySettingsSaved("models");
+			onDone(models);
+		} catch {
+			setError("Save failed. Check your connection and try again.");
+		} finally {
 			setSaving(false);
-			setError(res ? `Save failed: ${(await res.json().catch(() => ({}))).error ?? res.status}` : "Save failed. Check your connection and try again.");
-			return;
 		}
-		notifySettingsSaved("models");
-		onDone(models);
 	}
 
 	return createPortal(
