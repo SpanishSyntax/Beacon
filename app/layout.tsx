@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Source_Sans_3 } from "next/font/google";
+import localFont from "next/font/local";
 import { connection } from "next/server";
 import "katex/dist/katex.min.css";
 import "./globals.css";
@@ -13,8 +13,16 @@ import { readThemeBoot } from "@/src/server";
 
 // Chrome = JetBrains Mono, teaching prose = Source Sans 3, titles = CMU
 // Serif (the bundled lh-cmu @font-face in globals.css — no CDN).
-const ui = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
-const prose = Source_Sans_3({ subsets: ["latin"], variable: "--font-sans3" });
+const ui = localFont({
+	src: "../public/fonts/JetBrainsMono-Regular.ttf",
+	variable: "--font-jetbrains",
+	display: "swap",
+});
+const prose = localFont({
+	src: "../public/fonts/SourceSans3-Regular.ttf",
+	variable: "--font-sans3",
+	display: "swap",
+});
 
 export const metadata: Metadata = {
 	title: "Learning Harness",
