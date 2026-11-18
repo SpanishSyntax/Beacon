@@ -220,7 +220,7 @@ function log(line) {
 
 function startServer(port) {
 	return new Promise((resolve, reject) => {
-		const nodeBin = process.env.NODE_BIN || (process.platform === "win32" ? process.execPath : "node");
+		const nodeBin = process.env.NODE_BIN || process.execPath;
 		const child = spawn(
 			nodeBin,
 			process.platform === "darwin"
