@@ -39,6 +39,67 @@
         startupWMClass = "Beacon";
       };
 
+      # Hermetically emit type declarations for plugins that declare learnharness-plugin-api
+      pluginSdk = pkgs.buildNpmPackage {
+        pname = "learnharness-plugin-sdk";
+        version = "0.1.0";
+        src = lib.cleanSource ./.;
+        npmDepsHash = "sha256-bp7HWZaBNfuqtuguGxD4n1mtpTnMxRdqNvabxNMYRE8=";
+        dontNpmBuild = true;
+        installPhase = ''
+          mkdir -p $out
+          node scripts/build-plugin-types.mjs $out
+        '';
+      };
+
+      # Build core plugin packages individually from source
+      mkPlugin = {
+        name,
+        hash,
+      }:
+        pkgs.buildNpmPackage {
+          pname = "learnharness-plugin-${name}";
+          version = "0.1.0";
+          src = lib.cleanSource (./plugins + "/${name}");
+          npmDepsHash = hash;
+
+          postPatch = ''
+            if [ -f package.json ] && grep -q '"learnharness-plugin-api"' package.json; then
+              cp -r ${pluginSdk} .sdk
+            fi
+          '';
+
+          dontNpmBuild = true;
+
+          buildPhase = ''
+            node scripts/build.mjs
+          '';
+
+          installPhase = ''
+            mkdir -p $out
+            cp -r dist/* $out/
+          '';
+        };
+
+      corePlugins = {
+        flashcards = mkPlugin {
+          name = "flashcards";
+          hash = "sha256-AGjSn0TFK8jx3VpgAROg9fjhZ7gT6CKBD6vr+FbZJKE=";
+        };
+        drawingPad = mkPlugin {
+          name = "drawing-pad";
+          hash = "sha256-zMTb53SFM4ZQT30ktIu7s+DwqYL1QCN6Mg3ZtF5aCfw=";
+        };
+        codingQuestions = mkPlugin {
+          name = "coding-questions";
+          hash = "sha256-NWIHJiToak9X1qyMNSlZtMjyFatgIs0RHqmS0QcXzdo=";
+        };
+        richCodeBlocks = mkPlugin {
+          name = "rich-code-blocks";
+          hash = "sha256-/jyfBWOCuludfG1Hg3bXCUqMttXeABe0vt/paW5sSyY=";
+        };
+      };
+
       beaconPackage = pkgs.buildNpmPackage {
         pname = "beacon";
         version = "0.6.1";
@@ -56,8 +117,26 @@
         env = {
           NEXT_TELEMETRY_DISABLED = "1";
           ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
-          SKIP_CORE_PLUGINS_BUILD = "1";
         };
+
+        postPatch = ''
+          substituteInPlace app/layout.tsx \
+            --replace 'import { JetBrains_Mono, Source_Sans_3 } from "next/font/google";' 'const JetBrains_Mono = (_opts?: unknown) => ({ variable: "--font-jetbrains" }); const Source_Sans_3 = (_opts?: unknown) => ({ variable: "--font-sans3" });'
+        '';
+
+        preBuild = ''
+          # Stage local plugin API types for type checking
+          mkdir -p node_modules/learnharness-plugin-api
+          cp -r ${pluginSdk}/* node_modules/learnharness-plugin-api/
+
+          # Hermetically stage validated core plugins built from source
+          mkdir -p core-plugins
+          cp -r ${corePlugins.flashcards} core-plugins/flashcards
+          cp -r ${corePlugins.drawingPad} core-plugins/drawing-pad
+          cp -r ${corePlugins.codingQuestions} core-plugins/coding-questions
+          cp -r ${corePlugins.richCodeBlocks} core-plugins/rich-code-blocks
+          export LH_PREBUILT_CORE_PLUGINS="1"
+        '';
 
         postBuild = ''
           node scripts/build-server.mjs
@@ -161,18 +240,22 @@
         default = {
           type = "app";
           program = "${beaconPackage}/bin/beacon";
+          meta.description = "Launch Beacon desktop application";
         };
         beacon = {
           type = "app";
           program = "${beaconPackage}/bin/beacon";
+          meta.description = "Launch Beacon desktop application";
         };
         learnharness = {
           type = "app";
           program = "${beaconPackage}/bin/learnharness";
+          meta.description = "Launch LearnHarness desktop application";
         };
         dev = {
           type = "app";
           program = "${beaconPackage}/bin/beacon-dev";
+          meta.description = "Launch Beacon external desktop development session";
         };
       };
 
