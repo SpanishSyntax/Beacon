@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { JetBrains_Mono, Source_Sans_3 } from "next/font/google";
 import { connection } from "next/server";
 import "katex/dist/katex.min.css";
 import "./globals.css";
@@ -13,20 +13,12 @@ import { readThemeBoot } from "@/src/server";
 
 // Chrome = JetBrains Mono, teaching prose = Source Sans 3, titles = CMU
 // Serif (the bundled lh-cmu @font-face in globals.css — no CDN).
-const ui = localFont({
-	src: "../public/fonts/JetBrainsMono-Regular.ttf",
-	variable: "--font-jetbrains",
-	display: "swap",
-});
-const prose = localFont({
-	src: "../public/fonts/SourceSans3-Regular.ttf",
-	variable: "--font-sans3",
-	display: "swap",
-});
+const ui = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
+const prose = Source_Sans_3({ subsets: ["latin"], variable: "--font-sans3" });
 
 export const metadata: Metadata = {
-	title: "Beacon",
-	description: "An agent harness for learning: adaptive teaching, practice, and a persistent knowledge graph.",
+	title: "Learning Harness",
+	description: "A teacher agent with a memory — sessions, quizzes, and a knowledge graph of what you know.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
