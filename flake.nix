@@ -44,7 +44,7 @@
         pname = "learnharness-plugin-sdk";
         version = "0.1.0";
         src = lib.cleanSource ./.;
-        npmDepsHash = "sha256-bp7HWZaBNfuqtuguGxD4n1mtpTnMxRdqNvabxNMYRE8=";
+        npmDepsHash = "sha256-ink0rVziD1xk3dVq9ORWXIe03ISSlpDuBfXtzDBBNbA=";
         dontNpmBuild = true;
         installPhase = ''
           mkdir -p $out
@@ -88,24 +88,24 @@
         };
         drawingPad = mkPlugin {
           name = "drawing-pad";
-          hash = "sha256-zMTb53SFM4ZQT30ktIu7s+DwqYL1QCN6Mg3ZtF5aCfw=";
+          hash = "sha256-SbiwseLd9dhSBNDTbr9jfbr6zruoYH5pXUSb2I6roJY=";
         };
         codingQuestions = mkPlugin {
           name = "coding-questions";
-          hash = "sha256-NWIHJiToak9X1qyMNSlZtMjyFatgIs0RHqmS0QcXzdo=";
+          hash = "sha256-qge3Z50q70bjCRgYAnSezG3Jx4y64wvJYepp7511hAM=";
         };
         richCodeBlocks = mkPlugin {
           name = "rich-code-blocks";
-          hash = "sha256-/jyfBWOCuludfG1Hg3bXCUqMttXeABe0vt/paW5sSyY=";
+          hash = "sha256-2wt84ICmHf7YywZzLQRVswMBg99OAp43nnt9tJZcupw=";
         };
       };
 
       beaconPackage = pkgs.buildNpmPackage {
         pname = "beacon";
-        version = "0.6.1";
+        version = "0.7.0";
         src = lib.cleanSource ./.;
 
-        npmDepsHash = "sha256-bp7HWZaBNfuqtuguGxD4n1mtpTnMxRdqNvabxNMYRE8=";
+        npmDepsHash = "sha256-ink0rVziD1xk3dVq9ORWXIe03ISSlpDuBfXtzDBBNbA=";
 
         nativeBuildInputs = [
           pkgs.copyDesktopItems
